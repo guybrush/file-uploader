@@ -4,18 +4,34 @@
 
 var connect = require('connect') 
   , fs = require('fs')
+  , formidable = require('formidable')
   , uploadDir = __dirname+'/../uploads/'
   , port = 3000
-  , body, fileStream, server, socket, uploader
+  , files = []
+  , fields = []
+  , body, fileStream, server, socket, uploader, form
   
 uploader = function(req, res, next) {
-  if (req.headers['content-type'].match(/application\/octet-stream/i)) {
+  if (req.headers['content-type'].match(/multipart\/form-data/i)) {
+    form = new formidable.IncomingForm()
+    form.keepExtensions = true
+    form.uploadDir = uploadDir
+    form.parse(req, function(err, fields, files){
+      body = '{"success":"true"}'
+      res.writeHead(200, 
+        { 'Content-Type':'text/html'
+        , 'Content-Length':body.length
+        })
+      res.end(body)
+    })
+  }
+  else if (req.headers['content-type'].match(/application\/octet-stream/i)) {
     fileStream = fs.createWriteStream(uploadDir+req.headers['x-file-name'])
     req.pipe(fileStream)
     req.on('end', function() {
       body = '{"success":"true"}'
       res.writeHead(200, 
-        { 'Content-Type':'text/plain'
+        { 'Content-Type':'text/html'
         , 'Content-Length':body.length
         })
       res.end(body)

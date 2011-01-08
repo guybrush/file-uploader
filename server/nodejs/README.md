@@ -1,14 +1,13 @@
 # file-uploader with node.js
 
 This is an example of using file-uploader with [node.js](http://nodejs.org).
+It uses [connect](https://github.com/senchalabs/connect) for the sake of 
+simplicity. Multipart messages will be parsed with 
+[formidable](https://github.com/felixge/node-formidable) and the octet-stream
+will be written to disk directly (via the new awesome Stream-API of 
+nodejs-v0.3.3).
 
-*Note:* One could just use [formidable](https://github.com/felixge/node-formidable) 
-to upload files and send the upload-% from server to client (websockets, 
-longpoll, what ever). Which might be the better option. This is just for those, 
-who want a ready-to-use client-side implementation of an feature-rich 
-upload-button, which comes with file-uploader.
-
-Installing node.js:
+Installing node.js (v0.3.3+):
 
     curl http://nodejs.org/dist/node-v0.3.3.tar.gz
     tar xzvf node-v0.3.3.tar.gz
@@ -19,7 +18,11 @@ Install modules (with npm):
     
     curl http://npmjs.org/install.sh | sh
     npm install connect
+    npm install formidable
   
 Now the server can be started with `node server.js`. The server will listen on 
 port 3000 and saves the uploaded files in `../uploads`. Browse 
 `http://localhost:3000` and enjoy file-uploader with node.js!
+
+Any suggestions/questions/critique/.. is very welcome - 
+[guybrush](https://github.com/guybrush)
