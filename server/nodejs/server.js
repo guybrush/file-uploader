@@ -3,13 +3,12 @@
 //
 
 var connect = require('connect') 
+  , util = require('util')
   , fs = require('fs')
   , formidable = require('formidable')
   , uploadDir = __dirname+'/../uploads/'
   , port = 3000
-  , files = []
-  , fields = []
-  , body, fileStream, server, socket, uploader, form
+  , body, fileStream, server, uploader, form
   
 uploader = function(req, res, next) {
   if (req.headers['content-type'].match(/multipart\/form-data/i)) {
@@ -17,7 +16,8 @@ uploader = function(req, res, next) {
     form.keepExtensions = true
     form.uploadDir = uploadDir
     form.parse(req, function(err, fields, files){
-      body = '{"success":"true"}'
+      if (err) body = JSON.stringify({error:err})
+      else body = '{"success":"true"}'
       res.writeHead(200, 
         { 'Content-Type':'text/html'
         , 'Content-Length':body.length
@@ -28,6 +28,14 @@ uploader = function(req, res, next) {
   else if (req.headers['content-type'].match(/application\/octet-stream/i)) {
     fileStream = fs.createWriteStream(uploadDir+req.headers['x-file-name'])
     req.pipe(fileStream)
+    fileStream.on('error', function(err){
+      body = JSON.stringify({error:err})
+      res.writeHead(200, 
+        { 'Content-Type':'text/html'
+        , 'Content-Length':body.length
+        })
+      res.end(body)
+    })
     req.on('end', function() {
       body = '{"success":"true"}'
       res.writeHead(200, 
