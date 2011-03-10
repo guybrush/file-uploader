@@ -8,7 +8,7 @@ var connect = require('connect')
   , formidable = require('formidable')
   , uploadDir = __dirname+'/../uploads/'
   , port = 3000
-  , body, fileStream, server, uploader, form
+  , body, form, uploader
   
 uploader = function(req, res, next) {
   if (req.headers['content-type'].match(/multipart\/form-data/i)) {
@@ -17,7 +17,7 @@ uploader = function(req, res, next) {
     form.uploadDir = uploadDir
     form.parse(req, function(err, fields, files){
       if (err) body = JSON.stringify({error:err})
-      else body = '{"success":"true"}'
+      else body = JSON.stringify({success:true})
       res.writeHead(200, 
         { 'Content-Type':'text/html'
         , 'Content-Length':body.length
@@ -26,8 +26,25 @@ uploader = function(req, res, next) {
     })
   }
   else if (req.headers['content-type'].match(/application\/octet-stream/i)) {
-    fileStream = fs.createWriteStream(uploadDir+req.headers['x-file-name'])
-    req.pipe(fileStream)
+    var fileStream = fs.createWriteStream(uploadDir+req.headers['x-file-name'])
+    //fileStream.setMaxListeners(100)
+    req.on('data',function(chunk) {
+      req.pause()
+      fileStream.write(chunk)
+      fileStream.on('drain',function() {
+        req.resume()
+      })
+    })
+    req.on('end',function() {
+      req.resume()
+      fileStream.destroySoon()
+      body = JSON.stringify({success:true})
+      res.writeHead(200, 
+        { 'Content-Type':'text/html'
+        , 'Content-Length':body.length
+        })
+      res.end(body)
+    })
     fileStream.on('error', function(err){
       body = JSON.stringify({error:err})
       res.writeHead(200, 
@@ -36,20 +53,12 @@ uploader = function(req, res, next) {
         })
       res.end(body)
     })
-    req.on('end', function() {
-      body = '{"success":"true"}'
-      res.writeHead(200, 
-        { 'Content-Type':'text/html'
-        , 'Content-Length':body.length
-        })
-      res.end(body)
-    })
   }
 }                                                
-  
-server = module.exports = connect.createServer
-  ( connect.staticProvider({root: __dirname+'/public', cache:true})
-  , connect.staticProvider({root: __dirname+'/../../client', cache:true})
+
+var server = module.exports = connect
+  ( connect.static(__dirname+'/../../client')
+  , connect.static(__dirname+'/public')
   , connect.router(function(app){app.post('/upload', uploader)})
   ).listen(port)
 
